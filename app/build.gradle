@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
+
+//    packagingOptions {
+//        exclude 'lib/arm64-v8a/libjnitest.so'
+//        exclude 'lib/armeabi/libjnitest.so'
+//        exclude 'lib/armeabi-v7a/libjnitest.so'
+//        exclude 'lib/mips/libjnitest.so'
+//        exclude 'lib/mips64/libjnitest.so'
+//        exclude 'lib/x86/libjnitest.so'
+//        exclude 'lib/x86_64/libjnitest.so'
+//    }
+
+    defaultConfig {
+        applicationId "luofeng.myjnitest"
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            moduleName "jnitest"        // 生成so文件的名字
+        }
+    }
+
+    sourceSets.main {
+        jni.srcDirs = [] // This prevents the auto generation of Android.mk
+//        sourceSets.main.jni.srcDirs = []
+        jniLibs.srcDir 'src/main/libs' // This is not necessary unless you have precompiled libraries in your project.
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.0.1'
+    compile 'com.android.support:design:23.0.1'
+}
