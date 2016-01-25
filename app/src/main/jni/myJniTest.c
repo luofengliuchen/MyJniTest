@@ -226,21 +226,21 @@ void stackblurJob(unsigned char* src,                ///< input image data
     unsigned char shr_sum = stackblur_shr[radius];
     unsigned char stack[div * 3];
 
-    if (step == 1){
-        LOGE("step == 1");
+    if (step == 1)
+    {
         int minY = core * h / cores;
         int maxY = (core + 1) * h / cores;
 
-        for(y = minY; y < maxY; y++){
-            LOGE(" for(y = minY; y < maxY; y++){");
-
+        for(y = minY; y < maxY; y++)
+        {
             sum_r = sum_g = sum_b =
             sum_in_r = sum_in_g = sum_in_b =
             sum_out_r = sum_out_g = sum_out_b = 0;
 
             src_ptr = src + w4 * y; // start of line (0,y)
 
-            for(i = 0; i <= radius; i++){
+            for(i = 0; i <= radius; i++)
+            {
                 stack_ptr    = &stack[ 3 * i ];
                 stack_ptr[0] = src_ptr[0];
                 stack_ptr[1] = src_ptr[1];
@@ -254,7 +254,8 @@ void stackblurJob(unsigned char* src,                ///< input image data
             }
 
 
-            for(i = 1; i <= radius; i++){
+            for(i = 1; i <= radius; i++)
+            {
                 if (i <= wm) src_ptr += 4;
                 stack_ptr = &stack[ 3 * (i + radius) ];
                 stack_ptr[0] = src_ptr[0];
@@ -274,7 +275,8 @@ void stackblurJob(unsigned char* src,                ///< input image data
             if (xp > wm) xp = wm;
             src_ptr = src + 4 * (xp + y * w); //   img.pix_ptr(xp, y);
             dst_ptr = src + y * w4; // img.pix_ptr(0, y);
-            for(x = 0; x < w; x++){
+            for(x = 0; x < w; x++)
+            {
                 int alpha = dst_ptr[3];
                 dst_ptr[0] = clamp((sum_r * mul_sum) >> shr_sum, 0, alpha);
                 dst_ptr[1] = clamp((sum_g * mul_sum) >> shr_sum, 0, alpha);
@@ -328,7 +330,6 @@ void stackblurJob(unsigned char* src,                ///< input image data
     // step 2
     if (step == 2)
     {
-        LOGE(" if (step == 2)");
         int minX = core * w / cores;
         int maxX = (core + 1) * w / cores;
 
@@ -535,9 +536,7 @@ JNIEXPORT void JNICALL Java_luofeng_myjnitest_jni_JniHelper_toBlur(JNIEnv* env, 
 
     int h = infoOut.height;
     int w = infoOut.width;
-    LOGE("start to blur!");
     stackblurJob((unsigned char*)pixelsOut, w, h, radius, threadCount, threadIndex, round);
-    LOGE("blur over!");
     // Unlocks everything
     AndroidBitmap_unlockPixels(env, bitmapOut);
 }

@@ -18,31 +18,107 @@ package luofeng.myjnitest.jni;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.SeekBar;
 
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import luofeng.myjnitest.R;
 
-public class MainActivity extends Activity
-{
+public class MainActivity extends Activity{
+
+
+    Bitmap mBitmap;
+    ImageView iv;
+    static final int EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors();
+    static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(EXECUTOR_THREADS);
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-//        Display display = getWindowManager().getDefaultDisplay();
+        initView();
+    }
+
+    private void initView() {
+        //        Display display = getWindowManager().getDefaultDisplay();
 //        setContentView(new BitmapView(this, display.getWidth(), display.getHeight()));
         setContentView(R.layout.activity_main);
-        ImageView iv = (ImageView) findViewById(R.id.iv);
-        Bitmap mBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.x).copy(Bitmap.Config.ARGB_8888,true);
-        JniHelper.toBlur(mBitmap,100,1,1,1);
-        JniHelper.toBlur(mBitmap,100,1,1,2);
-
-//        blur(mBitmap,128);
+        iv = (ImageView) findViewById(R.id.iv);
+        SeekBar pb0 = (SeekBar) findViewById(R.id.sb0);
+        SeekBar pb = (SeekBar) findViewById(R.id.sb);
+        Button btn1 = (Button) findViewById(R.id.btn1);
+        Button btn2 = (Button) findViewById(R.id.btn2);
+        mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.y).copy(Bitmap.Config.ARGB_8888, true);
+//        JniHelper.toBlur(mBitmap,50,1,0,1);
+//        JniHelper.toBlur(mBitmap,10,1,0,2);
         iv.setImageBitmap(mBitmap);
+        pb.setOnSeekBarChangeListener(new MyOnSeekBarChangeListener());
+        pb0.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            private float mprogress = 0;
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                mprogress = (float)progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if(mprogress>=1){
+                    mBitmap = scaleBitmap(BitmapFactory.decodeResource(getResources()
+                            , R.drawable.y).copy(Bitmap.Config.ARGB_8888, true),1.0f/mprogress);
+                    iv.setImageBitmap(mBitmap);
+                }
+            }
+        });
+        btn1.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                iv.setImageBitmap(blur(mBitmap, 2));
+            }
+        });
+        btn2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.y).copy(Bitmap.Config.RGB_565, true);
+                JniHelper.renderPlasma(bitmap,System.currentTimeMillis());
+                iv.setImageBitmap(bitmap);
+            }
+        });
     }
+
+    private class MyOnSeekBarChangeListener implements SeekBar.OnSeekBarChangeListener {
+
+        private int mProgress;
+
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            mProgress = progress;
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            iv.setImageBitmap(blur(mBitmap,mProgress*254/100));
+        }
+    }
+
 
     /* load our native library */
     static {
@@ -50,10 +126,18 @@ public class MainActivity extends Activity
     }
 
 
+    private static Bitmap scaleBitmap(Bitmap bitmap,float scale) {
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale,scale); //长和宽放大缩小的比例
+        Bitmap resizeBmp = Bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
+        return resizeBmp;
+    }
+
+
     public Bitmap blur(Bitmap original, float radius) {
         Bitmap bitmapOut = original.copy(Bitmap.Config.ARGB_8888, true);
 
-        int cores = StackBlurManager.EXECUTOR_THREADS;
+        int cores = EXECUTOR_THREADS;
 
         ArrayList<NativeTask> horizontal = new ArrayList<NativeTask>(cores);
         ArrayList<NativeTask> vertical = new ArrayList<NativeTask>(cores);
@@ -63,13 +147,13 @@ public class MainActivity extends Activity
         }
 
         try {
-            StackBlurManager.EXECUTOR.invokeAll(horizontal);
+            EXECUTOR.invokeAll(horizontal);
         } catch (InterruptedException e) {
             return bitmapOut;
         }
 
         try {
-            StackBlurManager.EXECUTOR.invokeAll(vertical);
+            EXECUTOR.invokeAll(vertical);
         } catch (InterruptedException e) {
             return bitmapOut;
         }
@@ -91,36 +175,10 @@ public class MainActivity extends Activity
             _round = round;
         }
 
-        @Override public Void call() throws Exception {
+        @Override
+        public Void call() throws Exception {
             JniHelper.toBlur(_bitmapOut, _radius, _totalCores, _coreIndex, _round);
             return null;
         }
-
     }
-
 }
-
-//class BitmapView extends View {
-//    private Bitmap mBitmap;
-//    private long mStartTime;
-//
-//    /* implementend by libplasma.so */
-//
-//
-//    public BitmapView(Context context, int width, int height) {
-//        super(context);
-////        mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-//        mBitmap = BitmapFactory.decodeResource(context.getResources(),R.drawable.x);
-//        mStartTime = System.currentTimeMillis();
-//    }
-//
-//    @Override
-//    protected void onDraw(Canvas canvas) {
-//        //canvas.drawColor(0xFFCCCCCC);
-////        JniHelper.renderPlasma(mBitmap, System.currentTimeMillis() - mStartTime);
-//        JniHelper.toBlur(mBitmap,128,1,1,1);
-//        canvas.drawBitmap(mBitmap, 0, 0, null);
-//        // force a redraw, with a different time-based pattern.
-//        invalidate();
-//    }
-//}
