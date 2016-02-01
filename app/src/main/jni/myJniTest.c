@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <unistd.h>
+#include <string.h>
 
 #define  LOG_TAG    "libplasma"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -426,7 +428,20 @@ void stackblurJob(unsigned char* src,                ///< input image data
     }
 }
 
-
+JNIEXPORT void JNICALL Java_luofeng_myjnitest_jni_JniHelper_fork(JNIEnv * env
+        , jobject  obj) {
+    pid_t fpid;
+    fpid = fork();
+    /*赋予数值*/
+    if(fpid<0){
+        LOGE("fork error+%d",fpid);
+    }
+    else if(fpid==0){
+        LOGE("fork son+%d+this is son",fpid);
+    }else{
+        LOGE("fork dad+%d",fpid);
+    }
+}
 
 
 JNIEXPORT jstring JNICALL Java_luofeng_myjnitest_jni_JniHelper_createMyName
